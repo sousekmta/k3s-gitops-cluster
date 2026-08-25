@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: muj-web-deployment
+  namespace: default
+
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: muj-web
+
+  template:
+    metadata:
+      labels:
+        app: muj-web
+
+    spec:
+      containers:
+        - name: web-kontejner
+          image: sousekmta/muj-web-projekt:v2
+          ports:
+            - containerPort: 4242
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: muj-web-service
+  namespace: default
+
+spec:
+  selector:
+    app: muj-web
+
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 4242
+
+  type: ClusterIP

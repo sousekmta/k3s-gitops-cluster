@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drive
+  namespace: drive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drive
+  template:
+    metadata:
+      labels:
+        app: drive
+    spec:
+      initContainers:
+        - name: prisma-db-push
+          image: sousekmta/mta-drive:v1
+          command: ['npx', 'prisma', 'db', 'push']
+          envFrom:
+            - secretRef:
+                name: drive-secret
+      containers:
+        - name: drive
+          image: sousekmta/mta-drive:v1
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: drive-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drive
+  namespace: drive
+spec:
+  selector:
+    app: drive
+  ports:
+    - port: 3000
+      targetPort: 3000

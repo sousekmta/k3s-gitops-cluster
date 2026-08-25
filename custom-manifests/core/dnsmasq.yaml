@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dnsmasq-config
+data:
+  dnsmasq.conf: |
+    no-resolv
+
+    address=/headlamp.lan/192.168.100.1
+    address=/mujweb.lan/192.168.100.1
+
+    address=/minio.lan/192.168.100.1
+    address=/s3.lan/192.168.100.1
+
+    address=/drive.lan/192.168.100.1
+
+    address=/git.lan/192.168.100.1
+
+    address=/k3s-cicd-test-app.lan/192.168.100.1
+
+    address=/grafana.lan/192.168.100.1
+    address=/prometheus.lan/192.168.100.1
+
+    address=/alertmanager.lan/192.168.100.1
+
+    server=1.1.1.1
+    server=8.8.8.8
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dnsmasq
+spec:
+  selector:
+    matchLabels:
+      app: dnsmasq
+  template:
+    metadata:
+      labels:
+        app: dnsmasq
+    spec:
+      hostNetwork: true
+      containers:
+        - name: dnsmasq
+          image: dockurr/dnsmasq
+          ports:
+            - containerPort: 53
+              protocol: UDP
+            - containerPort: 53
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/dnsmasq.conf
+              subPath: dnsmasq.conf
+      volumes:
+        - name: config
+          configMap:
+            name: dnsmasq-config

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: custom-manifests
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/sousekmta/k3s-gitops-cluster.git'
+    targetRevision: HEAD
+    path: custom-manifests
+    directory:         
+      recurse: true 
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

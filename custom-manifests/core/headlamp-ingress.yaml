@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: headlamp-ingress
+  namespace: kube-system
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  rules:
+  - host: headlamp.lan # doménové jméno, na kterém bude naslouchat
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service: # jaká služba se má na tuto doménu přesměrovat
+            name: headlamp
+            port:
+              number: 80

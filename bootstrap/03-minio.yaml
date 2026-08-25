@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minio
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://charts.min.io/'
+    targetRevision: 5.0.14
+    chart: minio
+    helm:
+      values: |
+        mode: standalone
+        existingSecret: minio-admin-secret
+        buckets:
+          - name: mta-drive-files
+            policy: none
+            purge: false
+        persistence:
+          enabled: true
+          size: 10Gi
+          storageClass: longhorn
+        deploymentUpdate:
+          type: Recreate
+        statefulSetUpdate:
+          updateStrategy: Recreate
+        resources:
+          requests:
+            memory: 512Mi
+        service:
+          type: ClusterIP
+        consoleService:
+          type: ClusterIP
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: minio
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

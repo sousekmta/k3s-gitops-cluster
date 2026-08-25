@@ -1,0 +1,75 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitea
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://dl.gitea.com/charts/'
+    targetRevision: 12.7.0
+    chart: gitea
+    helm:
+      values: |
+        replicaCount: 1
+        postgresql:
+          enabled: false
+        postgresql-ha:
+          enabled: true
+          postgresql:
+            replicaCount: 3
+            image:
+              registry: docker.io
+              repository: bitnamilegacy/postgresql-repmgr
+          pgpool:
+            image:
+              registry: docker.io
+              repository: bitnamilegacy/pgpool
+        valkey-cluster:
+          enabled: false
+        valkey:
+          enabled: true
+          architecture: replication
+          auth:
+            enabled: false
+        gitea:
+          admin:
+            existingSecret: gitea-admin-secret
+            email: "student@m-ta.cz"
+          config:
+            database:
+              DB_TYPE: postgres
+            server:
+              SSH_PORT: 2222
+              SSH_LISTEN_PORT: 2222
+        service:
+          http:
+            type: LoadBalancer
+            port: 3000
+          ssh:
+            type: LoadBalancer
+            port: 2222
+            targetPort: 2222
+        persistence:
+          enabled: true
+          storageClass: longhorn
+          size: 10Gi
+          accessModes:
+            - ReadWriteOnce
+        ingress:
+          enabled: true
+          className: traefik
+          hosts:
+            - host: git.lan
+              paths:
+                - path: /
+                  pathType: Prefix
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: gitea
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

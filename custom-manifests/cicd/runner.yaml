@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea-runner
+  namespace: gitea
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea-runner
+  template:
+    metadata:
+      labels:
+        app: gitea-runner
+    spec:
+      containers:
+      - name: runner
+        image: gitea/act_runner:nightly
+        env:
+        - name: GITEA_INSTANCE_URL
+          value: http://192.168.100.1:3000
+        - name: GITEA_RUNNER_REGISTRATION_TOKEN
+          value: "aUPEGVvwMxduouFBPbV1Gwkh0U9ySswJUYa2h5xj"
+        - name: GITEA_RUNNER_NAME
+          value: "k3s-runner"
+        - name: GITEA_RUNNER_LABELS
+          value: "ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
+        securityContext:
+          privileged: true
+          runAsUser: 0
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock

@@ -1,0 +1,91 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://prometheus-community.github.io/helm-charts'
+    targetRevision: 58.0.0
+    chart: kube-prometheus-stack
+    helm:
+      values: |
+        kubeControllerManager:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeProxy:
+          enabled: false
+        kubeEtcd:
+          enabled: false
+        prometheus:
+          prometheusSpec:
+            externalUrl: 'http://prometheus.lan'
+            retention: 5d
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: longhorn
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 2Gi
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            hosts:
+              - prometheus.lan
+            paths:
+              - /
+        grafana:
+          admin:
+            existingSecret: grafana-admin-secret
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            hosts:
+              - grafana.lan
+            paths:
+              - /
+          persistence:
+            enabled: true
+            type: pvc
+            storageClassName: longhorn
+            accessModes: ["ReadWriteOnce"]
+            size: 2Gi
+        alertmanager:
+          alertmanagerSpec:
+            externalUrl: 'http://alertmanager.lan'
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            hosts:
+              - alertmanager.lan
+            paths:
+              - /
+          config:
+            global:
+              resolve_timeout: 5m
+            route:
+              group_by: ['alertname', 'job']
+              group_wait: 10s
+              group_interval: 30s
+              repeat_interval: 12h
+              receiver: 'slack'
+              routes: []
+            receivers:
+            - name: 'slack'
+              slack_configs:
+              - api_url: 'https://hooks.slack.com/services/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' 
+                channel: '#cluster-alerts'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
